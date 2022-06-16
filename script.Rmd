@@ -1,0 +1,151 @@
+---
+title: "Step Challenge: Step Calculations"
+author: "Thomas Vargas"
+date: "09/06/2022"
+output: html_document
+---
+
+# Week 1
+
+```{r week1, include=FALSE}
+
+# Load packages
+library(tidyverse)
+library(here)
+library(ggthemes)
+
+# Set theme
+#theme_set(theme_ipsum_rc())
+#theme_set(theme_bw())
+
+# Load data
+data_w1<- readxl::read_excel(here("data", "week1.xlsx"), sheet = "SCORES") %>%
+  select(-Score) %>%
+  drop_na() %>%
+  rename(total_steps = "Sum of Steps",
+         teammembers = "Sum of Count",
+         team = "Team Name") %>%
+  mutate(average_step = total_steps/teammembers,
+         daily_steps = average_step/7,
+         week = 1,
+         us = if_else(team =="Walking Sole Train","Walking Sole Train","Average"))
+
+# Calculate mean and sd
+data %>%
+  summarise(ave = sd(daily_steps))
+
+# 10606.67	- 2051.414		
+# 10606.67	+ 2051.414		
+
+# Plot
+fig1<-data %>%
+  ggplot(mapping = aes(y=daily_steps,
+                       x=reorder(team, daily_steps),
+                       fill=if_else(team =="Walking Sole Train","Highlighted","Normal"))) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(x="", title="Week 1: Mean Steps per Person per Day")+
+  theme_wsj() +
+  theme(text = element_text(size=8), legend.position = "none") +
+  geom_hline(yintercept = 10606.67	, linetype="dotted", 
+                color = "black", size=1)+
+  geom_hline(yintercept = 8555.256, linetype="longdash", 
+                color = "black", size=1)+
+  geom_hline(yintercept = 12658.08, linetype="longdash", 
+                color = "black", size=1)
+
+```
+
+# Week 2
+
+```{r week2, include=FALSE}
+
+# Load packages
+library(tidyverse)
+library(here)
+library(ggthemes)
+
+# Set theme
+#theme_set(theme_ipsum_rc())
+#theme_set(theme_bw())
+
+# Calculate team members
+team_n<- readxl::read_excel(here("data", "week2.xlsx"), sheet = "Data") %>%
+  filter(Week == "Week 2 (June 6 - 12)") %>%
+  group_by(`Team Name`) %>%
+  count()
+
+# Calculate steps
+team_steps<- readxl::read_excel(here("data", "week2.xlsx"), sheet = "Data") %>%
+  filter(Week == "Week 2 (June 6 - 12)") %>%
+  group_by(`Team Name`) %>%
+  summarize(steps = sum(Steps))
+
+# Merge to calculate steps per person
+
+data_w2 <- team_steps %>%
+  left_join(team_n) %>%
+  rename(total_steps = steps,
+         teammembers = n,
+         team = "Team Name") %>%
+  mutate(average_step = total_steps/teammembers,
+         daily_steps = average_step/7, 
+         week = 2,
+         us = if_else(team =="Walking Sole Train","Walking Sole Train","Average"))
+
+# Calculate mean and sd
+
+data_w2 %>%
+  summarise(ave = mean(daily_steps))
+
+data_w2 %>%
+  summarise(sd = sd(daily_steps))
+
+# 10574.02		- 2257.825	= 8316.195			
+# 10574.02		+ 2257.825	=  12831.85		
+
+fig1<-data_w2 %>%
+  ggplot(mapping = aes(y=daily_steps,
+                       x=reorder(team, daily_steps),
+                       fill=if_else(team =="Walking Sole Train","Highlighted","Normal"))) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(x="", title="Week 2: Mean Steps per Person per Day")+
+  theme_wsj() +
+  theme(text = element_text(size=8), legend.position = "none") +
+  geom_hline(yintercept = 10574.02	, linetype="dotted", 
+                color = "black", size=1)+
+  geom_hline(yintercept = 8316.195, linetype="longdash", 
+                color = "black", size=1)+
+  geom_hline(yintercept = 12831.85, linetype="longdash", 
+                color = "black", size=1)
+
+```
+# Full Data
+```{r}
+full_data <- data_w1 %>%
+  full_join(data_w2) %>%
+  select(team, daily_steps, week, us)
+
+average_full_data <- full_data %>%
+  filter(team != "Walking Sole Train") %>%
+  group_by(week) %>%
+  summarise(daily_steps = mean(daily_steps)) %>%
+  mutate(team = "Average")
+
+us_full_data <-full_data %>%
+  filter(team == "Walking Sole Train") %>%
+  select(team, daily_steps, week) %>%
+  full_join(average_full_data)
+
+
+fig_full<-us_full_data %>%
+  ggplot(mapping = aes(week, daily_steps, colour=team))+
+  geom_line() + 
+  theme_wsj() +
+  labs(x="Week", y="Mean Steps per Day")
+
+
+
+```
+
