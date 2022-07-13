@@ -104,7 +104,7 @@ data_w2 %>%
 # 10574.02		- 2257.825	= 8316.195			
 # 10574.02		+ 2257.825	=  12831.85		
 
-fig1<-data_w2 %>%
+fig2<-data_w2 %>%
   ggplot(mapping = aes(y=daily_steps,
                        x=reorder(team, daily_steps),
                        fill=if_else(team =="Walking Sole Train","Highlighted","Normal"))) +
@@ -126,7 +126,7 @@ fig1<-data_w2 %>%
 
 # Week 3
 
-```{r week2, include=FALSE}
+```{r week3, include=FALSE}
 # Set theme
 #theme_set(theme_ipsum_rc())
 #theme_set(theme_bw())
@@ -166,7 +166,7 @@ data_w3 %>%
 # 11208.63			- 2698.198		= 8510.432			
 # 11208.63			+ 2698.198		=  13906.83		
 
-fig1<-data_w3 %>%
+fig3<-data_w3 %>%
   ggplot(mapping = aes(y=daily_steps,
                        x=reorder(team, daily_steps),
                        fill=if_else(team =="Walking Sole Train","Highlighted","Normal"))) +
@@ -183,11 +183,73 @@ fig1<-data_w3 %>%
                 color = "black", size=1)
 
 ```
+
+# Week 4
+
+```{r week4, include=FALSE}
+# Set theme
+#theme_set(theme_ipsum_rc())
+#theme_set(theme_bw())
+
+# Calculate team members
+team_n<- readxl::read_excel(here("data", "week4.xlsx"), sheet = "Data") %>%
+  filter(Week == "Week 4 (June 20 - 26)") %>%
+  group_by(`Team Name`) %>%
+  count()
+
+# Calculate steps
+team_steps<- readxl::read_excel(here("data", "week4.xlsx"), sheet = "Data") %>%
+  filter(Week == "Week 4 (June 20 - 26)") %>%
+  group_by(`Team Name`) %>%
+  summarize(steps = sum(Steps))
+
+# Merge to calculate steps per person
+
+data_w4 <- team_steps %>%
+  left_join(team_n) %>%
+  rename(total_steps = steps,
+         teammembers = n,
+         team = "Team Name") %>%
+  mutate(average_step = total_steps/teammembers,
+         daily_steps = average_step/7, 
+         week = 4,
+         us = if_else(team =="Walking Sole Train","Walking Sole Train","Average"))
+
+# Calculate mean and sd
+
+data_w4 %>%
+  summarise(ave = mean(daily_steps))
+
+data_w4 %>%
+  summarise(sd = sd(daily_steps))
+
+# 11937.55				- 2070.713			= 9866.837			
+# 11937.55				+ 2070.713			=  14008.26		
+
+fig4<-data_w4 %>%
+  ggplot(mapping = aes(y=daily_steps,
+                       x=reorder(team, daily_steps),
+                       fill=if_else(team =="Walking Sole Train","Highlighted","Normal"))) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(x="", title="Week 4: Mean Steps per Person per Day")+
+  theme_wsj() +
+  theme(text = element_text(size=8), legend.position = "none") +
+  geom_hline(yintercept = 11937.55	, linetype="dotted", 
+                color = "black", size=1)+
+  geom_hline(yintercept = 9866.837, linetype="longdash", 
+                color = "black", size=1)+
+  geom_hline(yintercept = 14008.26, linetype="longdash", 
+                color = "black", size=1)
+
+```
+
 # Full Data
 ```{r}
 full_data <- data_w1 %>%
   full_join(data_w2) %>%
   full_join(data_w3) %>%
+  full_join(data_w4) %>%
   select(team, daily_steps, week, us)
 
 average_full_data <- full_data %>%
@@ -209,10 +271,27 @@ fig_full<-us_full_data %>%
   theme(legend.position="bottom") +
   labs(x="Week", y="Mean Steps per Day", title="Step Challenge: Mean Steps Over Time") 
 
-us_full_data %>%
+fig_full<-us_full_data %>%
+  ggplot(mapping = aes(week, daily_steps, colour=team))+
+  geom_smooth() + 
+  theme_bw() +
+  theme(legend.position="bottom") +
+  labs(x="Week", y="Mean Steps per Day", title="Step Challenge: Mean Steps Over Time") 
+
+fig_full2<-us_full_data %>%
   ggplot(mapping = aes(week, daily_steps, colour=team))+
   geom_line() + 
   theme_wsj() +
   labs(x="Week", y="Mean Steps per Day")
 
 ```
+
+# Together
+
+```{r}
+
+library(gridExtra)
+grid.arrange(fig1,fig2,fig3,fig4, ncol=2)
+  
+```
+
